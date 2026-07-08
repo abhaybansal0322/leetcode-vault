@@ -1,7 +1,7 @@
 name: leetcode-sync
 on:
   schedule:
-    - cron: "0 * * * *"   # hourly; change to taste
+    - cron: "17 * * * *"  # hourly at :17 (off-peak = more reliable timing)
   workflow_dispatch:        # lets you run it manually from the Actions tab
 
 permissions:
