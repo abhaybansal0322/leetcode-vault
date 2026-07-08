@@ -20,7 +20,7 @@ jobs:
         env:
           LEETCODE_SESSION: ${{ secrets.LEETCODE_SESSION }}
           LEETCODE_CSRF: ${{ secrets.LEETCODE_CSRF }}
-          GIT_AUTHOR_NAME: leetcode-sync
-          GIT_AUTHOR_EMAIL: bot@users.noreply.github.com
-          GIT_COMMITTER_NAME: leetcode-sync
-          GIT_COMMITTER_EMAIL: bot@users.noreply.github.com
+          GIT_AUTHOR_NAME: Abhay Bansal
+          GIT_AUTHOR_EMAIL: abhaybansal19000@gmail.com
+          GIT_COMMITTER_NAME: Abhay Bansal
+          GIT_COMMITTER_EMAIL: abhaybansal19000@gmail.com
