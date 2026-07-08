@@ -11,6 +11,7 @@ DevTools > Application > Cookies on leetcode.com (or copy from Network tab).
 
 Re-run any time. It only writes/commits problems that are new or changed.
 """
+import glob
 import os
 import re
 import subprocess
@@ -87,10 +88,15 @@ def main():
     wrote = 0
     for sub in all_submissions(s):
         slug = sub["title_slug"]
+        base = slugify(sub["title"])
+        # submissions are newest-first: once we reach one already in the repo,
+        # everything older is already synced, so stop. Keeps each run cheap.
+        if glob.glob(os.path.join(ROOT, "*", base + ".*")):
+            break
         ext = EXT.get(sub["lang"], "txt")
         header = f"# {sub['title']}\n# {BASE}/problems/{slug}/\n\n"
         body = header + sub["code"] if ext in ("py", "sql", "rb") else sub["code"]
-        fname = f"{slugify(sub['title'])}.{ext}"
+        fname = f"{base}.{ext}"
         for topic in topics_of(s, slug):  # one copy per tag
             path = os.path.join(ROOT, topic, fname)
             os.makedirs(os.path.dirname(path), exist_ok=True)
