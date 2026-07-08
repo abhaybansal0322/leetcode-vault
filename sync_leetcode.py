@@ -74,12 +74,12 @@ def all_submissions(s):
         time.sleep(0.5)  # ponytail: fixed delay; add backoff only if you hit 429s
 
 
-def topic_of(s, slug):
-    """First topic tag, or 'uncategorized'. One GraphQL call per problem."""
+def topics_of(s, slug):
+    """All topic tags (or ['uncategorized']). One GraphQL call per problem."""
     q = """query t($slug:String!){question(titleSlug:$slug){topicTags{slug}}}"""
     r = s.post(f"{BASE}/graphql", json={"query": q, "variables": {"slug": slug}})
     tags = r.json()["data"]["question"]["topicTags"]
-    return tags[0]["slug"] if tags else "uncategorized"
+    return [t["slug"] for t in tags] or ["uncategorized"]
 
 
 def main():
@@ -88,17 +88,18 @@ def main():
     for sub in all_submissions(s):
         slug = sub["title_slug"]
         ext = EXT.get(sub["lang"], "txt")
-        topic = topic_of(s, slug)
-        path = os.path.join(ROOT, topic, f"{slugify(sub['title'])}.{ext}")
-        os.makedirs(os.path.dirname(path), exist_ok=True)
         header = f"# {sub['title']}\n# {BASE}/problems/{slug}/\n\n"
         body = header + sub["code"] if ext in ("py", "sql", "rb") else sub["code"]
-        if os.path.exists(path) and open(path, encoding="utf-8").read() == body:
-            continue  # unchanged, skip
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(body)
-        wrote += 1
-        print(f"  {topic}/{os.path.basename(path)}")
+        fname = f"{slugify(sub['title'])}.{ext}"
+        for topic in topics_of(s, slug):  # one copy per tag
+            path = os.path.join(ROOT, topic, fname)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            if os.path.exists(path) and open(path, encoding="utf-8").read() == body:
+                continue  # unchanged, skip
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(body)
+            wrote += 1
+            print(f"  {topic}/{fname}")
         time.sleep(0.3)
 
     if wrote == 0:
@@ -107,7 +108,7 @@ def main():
     subprocess.run(["git", "add", "-A"], cwd=ROOT, check=True)
     subprocess.run(["git", "commit", "-m", f"leetcode: sync {wrote} solution(s)"],
                    cwd=ROOT, check=True)
-    subprocess.run(["git", "push"], cwd=ROOT, check=True)
+    subprocess.run(["git", "push", "-u", "origin", "HEAD"], cwd=ROOT, check=True)
     print(f"Pushed {wrote} solution(s).")
 
 

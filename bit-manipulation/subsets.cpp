@@ -1,0 +1,23 @@
+class Solution {
+public:
+    vector<vector<int>> subsets(vector<int>& nums) {
+        
+        int n = nums.size();
+        vector<vector<int>> res;
+
+        for(int mask=0;mask<(1<<n);mask++) {
+
+            vector<int> curr;
+            for(int i=0;i<n;i++) {
+
+                if(mask & (1<<i)) {
+
+                    curr.push_back(nums[i]);
+                }
+            }
+            res.push_back(curr);
+        }
+
+        return res;
+    }
+};
