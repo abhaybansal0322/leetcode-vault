@@ -59,6 +59,12 @@ def all_submissions(s):
     offset = 0
     while True:
         r = s.get(f"{BASE}/api/submissions/", params={"offset": offset, "limit": 20})
+        if r.status_code in (403, 429):
+            # LeetCode rate-limits / forbids paging deep into history. Stop here
+            # and let main() commit whatever we already collected, instead of
+            # crashing and losing the run. New solves are in recent pages anyway.
+            print(f"  (leetcode returned {r.status_code} at offset {offset}; stopping scan)")
+            return
         r.raise_for_status()
         data = r.json()
         for sub in data["submissions_dump"]:
@@ -86,15 +92,21 @@ def topics_of(s, slug):
 def main():
     s = session()
     wrote = 0
+    synced_streak = 0
     for sub in all_submissions(s):
         slug = sub["title_slug"]
         base = slugify(sub["title"])
-        # already saved (in any topic folder)? skip it, but KEEP scanning — a
-        # re-submitted old problem can sort ahead of a genuinely new one, so we
-        # can't stop early without missing new solves. topics_of (the expensive
-        # per-problem call) still only runs for new problems below, so this stays cheap.
+        # already saved (in any topic folder)? skip it. We keep a running count of
+        # consecutive already-saved problems: a stray re-submitted old problem only
+        # nudges it, but once we've seen STOP_AFTER in a row we're clearly past any
+        # recent new solves, so stop — this keeps runs to a couple pages and avoids
+        # paging deep enough for LeetCode to 403 us.
         if glob.glob(os.path.join(ROOT, "*", base + ".*")):
+            synced_streak += 1
+            if synced_streak >= 30:
+                break
             continue
+        synced_streak = 0
         ext = EXT.get(sub["lang"], "txt")
         header = f"# {sub['title']}\n# {BASE}/problems/{slug}/\n\n"
         body = header + sub["code"] if ext in ("py", "sql", "rb") else sub["code"]
