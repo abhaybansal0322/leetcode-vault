@@ -89,10 +89,12 @@ def main():
     for sub in all_submissions(s):
         slug = sub["title_slug"]
         base = slugify(sub["title"])
-        # submissions are newest-first: once we reach one already in the repo,
-        # everything older is already synced, so stop. Keeps each run cheap.
+        # already saved (in any topic folder)? skip it, but KEEP scanning — a
+        # re-submitted old problem can sort ahead of a genuinely new one, so we
+        # can't stop early without missing new solves. topics_of (the expensive
+        # per-problem call) still only runs for new problems below, so this stays cheap.
         if glob.glob(os.path.join(ROOT, "*", base + ".*")):
-            break
+            continue
         ext = EXT.get(sub["lang"], "txt")
         header = f"# {sub['title']}\n# {BASE}/problems/{slug}/\n\n"
         body = header + sub["code"] if ext in ("py", "sql", "rb") else sub["code"]
